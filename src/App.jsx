@@ -1,4 +1,3 @@
-// App.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
@@ -14,7 +13,7 @@ function Model({
   onClick,
   cameraPosition,
   cameraTarget,
-  isZoomedIn, // New prop to control hover
+  isZoomedIn,
 }) {
   const { scene, animations } = useGLTF(path);
   const { actions } = useAnimations(animations, scene);
@@ -23,7 +22,6 @@ function Model({
 
   useEffect(() => {
     if (isZoomedIn || (hovered && interactive)) {
-      // Play animation if zoomed in or hovered (when zoomed out)
       Object.values(actions).forEach((action) => action.play());
     } else {
       Object.values(actions).forEach((action) => action.stop());
@@ -33,25 +31,29 @@ function Model({
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
 
+    if (id === 'console') {
+      scene.rotation.y = -Math.PI / 2.5;
+    }
+
     if (fly) {
-      // Smooth circular motion
       const radiusX = 20;
       const radiusZ = 60;
       const speed = 0.5;
 
-      scene.position.x = initialPosition.current[0] + radiusX * Math.cos(t * speed);
-      scene.position.z = initialPosition.current[2] + radiusZ * Math.sin(t * speed);
+      scene.position.x =
+        initialPosition.current[0] + radiusX * Math.cos(t * speed);
+      scene.position.z =
+        initialPosition.current[2] + radiusZ * Math.sin(t * speed);
 
-      const baseY = initialPosition.current[1] + Math.sin(t * speed * 2) * 5;
+      const baseY =
+        initialPosition.current[1] + Math.sin(t * speed * 2) * 5;
 
       if (!isZoomedIn && hovered && interactive) {
-        // Apply hover effect only when not zoomed in
         scene.position.y = baseY + Math.sin(t * 6) * 1.5;
       } else {
         scene.position.y = baseY;
       }
     } else if (!isZoomedIn && hovered && interactive) {
-      // Apply hover effect when not flying and not zoomed in
       scene.position.y = initialPosition.current[1] + Math.sin(t * 6) * 1.5;
     } else {
       scene.position.set(...initialPosition.current);
@@ -115,7 +117,9 @@ function CameraController({ cameraState, controlsRef }) {
       }
 
       const positionDistance = camera.position.distanceTo(desiredCameraPosition);
-      const targetDistance = controlsRef.current.target.distanceTo(desiredCameraTarget);
+      const targetDistance = controlsRef.current.target.distanceTo(
+        desiredCameraTarget
+      );
 
       if (positionDistance > 0.1 || targetDistance > 0.1) {
         camera.position.lerp(desiredCameraPosition, 0.1);
@@ -136,22 +140,58 @@ function CameraController({ cameraState, controlsRef }) {
 function App() {
   const [cameraState, setCameraState] = useState(null);
   const [currentFocus, setCurrentFocus] = useState(null);
+  const [showButton, setShowButton] = useState(false);
   const controlsRef = useRef();
+
+  // New state variables for button interactions
+  const [buttonHover, setButtonHover] = useState(false);
+  const [buttonActive, setButtonActive] = useState(false);
 
   const handleModelClick = (id, { cameraPosition, cameraTarget }) => {
     if (currentFocus === id) {
-      // If the model is already focused, reset the camera to zoom out
       resetCamera();
     } else {
-      // Zoom in to the clicked model
       setCameraState({ cameraPosition, cameraTarget });
       setCurrentFocus(id);
+      if (id === 'console') {
+        setShowButton(true);
+      } else {
+        setShowButton(false);
+      }
     }
   };
 
   const resetCamera = () => {
     setCameraState(null);
     setCurrentFocus(null);
+    setShowButton(false);
+  };
+
+  // Updated button styles
+  const buttonStyle = {
+    position: 'absolute',
+    top: '350px',
+    left: '240px',
+    padding: '20px 40px',
+    fontSize: '30px',
+    fontFamily: '"Press Start 2P", cursive',
+    color: '#fff',
+    background: 'linear-gradient(to bottom, #88ccff, #0055ff)', // Blue gradient
+    border: '4px solid #fff',
+    borderRadius: '15px',
+    textShadow: '2px 2px #000',
+    cursor: 'pointer',
+    transition: 'transform 0.25s ease, box-shadow 0.25s ease', // Smooth transition
+    transform: buttonActive
+      ? 'scale(0.95) translateY(4px)'
+      : buttonHover
+      ? 'scale(1.05)'
+      : 'scale(1)',
+    boxShadow: buttonActive
+      ? 'inset 0 2px 0 #aaddff, 0 4px 0 #0033aa, 0 4px 10px rgba(0,0,0,0.5)'
+      : buttonHover
+      ? 'inset 0 4px 0 #aaddff, 0 8px 0 #0033aa, 0 8px 20px rgba(0,0,0,0.5)'
+      : 'inset 0 4px 0 #aaddff, 0 6px 0 #0033aa, 0 6px 15px rgba(0,0,0,0.5)',
   };
 
   return (
@@ -183,7 +223,7 @@ function App() {
           position={[0, -40, 0]}
           interactive={true}
           onClick={handleModelClick}
-          cameraPosition={[0, 20, 40]}
+          cameraPosition={[0, 20, 30]}
           cameraTarget={[0, -10, -10]}
           isZoomedIn={currentFocus !== null}
         />
@@ -192,11 +232,11 @@ function App() {
           id="console"
           path="/console.glb"
           scale={[7, 7, 7]}
-          position={[-60, -35, 50]}
+          position={[-90, -35, 20]}
           interactive={true}
           onClick={handleModelClick}
-          cameraPosition={[-60, -25, 70]}
-          cameraTarget={[-60, -35, 50]}
+          cameraPosition={[-30, -25, 40]}
+          cameraTarget={[-70, -25, 35]}
           isZoomedIn={currentFocus !== null}
         />
 
@@ -227,12 +267,26 @@ function App() {
         <OrbitControls
           ref={controlsRef}
           enableZoom={true}
-          minDistance={10}
-          maxDistance={500}
+          minDistance={20}
+          maxDistance={190}
           maxPolarAngle={Math.PI}
           minPolarAngle={0}
         />
       </Canvas>
+      {showButton && (
+        <button
+          style={buttonStyle}
+          onMouseEnter={() => setButtonHover(true)}
+          onMouseLeave={() => {
+            setButtonHover(false);
+            setButtonActive(false);
+          }}
+          onMouseDown={() => setButtonActive(true)}
+          onMouseUp={() => setButtonActive(false)}
+        >
+          Start
+        </button>
+      )}
     </div>
   );
 }
