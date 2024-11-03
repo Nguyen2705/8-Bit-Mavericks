@@ -141,6 +141,7 @@ function App() {
   const [cameraState, setCameraState] = useState(null);
   const [currentFocus, setCurrentFocus] = useState(null);
   const [showButton, setShowButton] = useState(false);
+  const [buttonVisible, setButtonVisible] = useState(false); // New state for visibility after delay
   const controlsRef = useRef();
 
   // New state variables for button interactions
@@ -155,8 +156,11 @@ function App() {
       setCurrentFocus(id);
       if (id === 'console') {
         setShowButton(true);
+        setButtonVisible(false); // Reset visibility state
+        setTimeout(() => setButtonVisible(true), 3000); // Show button after 2 seconds
       } else {
         setShowButton(false);
+        setButtonVisible(false);
       }
     }
   };
@@ -165,6 +169,7 @@ function App() {
     setCameraState(null);
     setCurrentFocus(null);
     setShowButton(false);
+    setButtonVisible(false);
   };
 
   // Updated button styles
@@ -181,7 +186,8 @@ function App() {
     borderRadius: '15px',
     textShadow: '2px 2px #000',
     cursor: 'pointer',
-    transition: 'transform 0.25s ease, box-shadow 0.25s ease', // Smooth transition
+    transition: 'opacity 0.5s ease, transform 0.25s ease, box-shadow 0.25s ease', // Smooth transition with opacity
+    opacity: buttonVisible ? 1 : 0, // Controls opacity for fade-in
     transform: buttonActive
       ? 'scale(0.95) translateY(4px)'
       : buttonHover
