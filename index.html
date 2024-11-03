@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Upload Mockup</title>
+</head>
+<body>
+    <h1>Upload a PDF</h1>
+    <form id="uploadForm">
+        <input type="file" id="pdfInput" name="pdf" accept="application/pdf" required>
+        <button type="submit">Upload PDF</button>
+    </form>
+
+    <p id="responseMessage"></p>
+
+    <script>
+        document.getElementById("uploadForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            // Get the PDF file from the input
+            const pdfInput = document.getElementById("pdfInput");
+            const file = pdfInput.files[0];
+
+            if (!file) {
+                document.getElementById("responseMessage").innerText = "Please select a PDF file.";
+                return;
+            }
+
+            // Create a FormData object to send the file
+            const formData = new FormData();
+            formData.append("pdf", file);
+            console.log("Hello1");
+
+            try {
+                // Send the PDF to the Flask backend using fetch
+                console.log("Hello2");
+                const response = await fetch("http://127.0.0.1:5000/", {
+                    method: "POST",
+                    body: formData
+                });
+                console.log("Hello");
+                console.log(response);
+                // Handle the response from the server
+                if (response.ok) {
+                    const message = await response.text();
+                    document.getElementById("responseMessage").innerText = message;
+                } else {
+                    document.getElementById("responseMessage").innerText = "Failed to upload PDF.";
+                }
+            } catch (error) {
+                document.getElementById("responseMessage").innerText = "An error occurred: " + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
