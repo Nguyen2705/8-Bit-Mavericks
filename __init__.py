@@ -1,19 +1,31 @@
 from flask import Flask, jsonify, request
-from flask_pymongo import PyMongo
+# from flask_pymongo import PyMongo
 from flask_cors import CORS
 #from OCR_process import quickstart
-import gridfs
+# import gridfs
 import os
 import base64 as b64
 from google.api_core.client_options import ClientOptions
 from google.cloud import documentai # type: ignore
+from google.cloud import datastore
+from dotenv import load_dotenv
+import os
+
 from typing import Optional
 app = Flask(__name__)
-app.config["MONGO_URI"] = "mongodb://localhost:27017/Patient"
-mongo = PyMongo(app)
+# app.config["MONGO_URI"] = "mongodb://localhost:27017/Patient"
+# mongo = PyMongo(app)
 CORS(app) # This will enable CORS for all routes
 
 
+
+
+
+load_dotenv()
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+FLASK_APP=os.getenv("FLASK_APP")
+
+client = datastore.Client()
 UPLOAD_DIRECTORY = './uploads'
 
 if not os.path.exists(UPLOAD_DIRECTORY):
@@ -91,6 +103,7 @@ def process_document_sample(
     location: str,
     processor_id: str,
     file_path: str,
+    filename: str,
     mime_type: str,
     field_mask: Optional[str] = None,
     processor_version_id: Optional[str] = None,
@@ -122,10 +135,7 @@ def process_document_sample(
     # Optional: Additional configurations for processing.
     process_options = documentai.ProcessOptions(
         # Process only specific pages
-        # individual_page_selector=documentai.ProcessOptions.IndividualPageSelector(
-        #     pages=[8] #HARD CODED
-        # )
-        fromStart=1
+        from_start=15
     )
 
     # Configure the process request
@@ -144,7 +154,10 @@ def process_document_sample(
 
     # Read the text recognition output from the processor
     print("The document contains the following text:")
-    print(document.text)
+    # print(document.text)
+
+    with open(f"{filename}.txt",'w') as file:
+        file.write(document.text)
 
 def store_images():
     pass
@@ -160,12 +173,12 @@ def upload_image():
     # Save or process the file
     file.save(f"./uploads/{file.filename}")
     file_b64 = pdf_to_base64(f"./uploads/{file.filename}")
-    process_document(f"./uploads/{file.filename}")
+    process_new_document(f"./uploads/{file.filename}",file.filename)
 
     return "pdf uploaded successfully", 200
 
-def process_document(filepath):
-    process_document_sample(project_id, location, processor_id, filepath, mime_type, field_mask, processor_version_id)
+def process_new_document(filepath,filename):
+    process_document_sample(project_id, location, processor_id, filepath,filename, mime_type, field_mask, processor_version_id)
 
 def pdf_to_base64(file_path):
      # Open the PDF file in binary mode
@@ -188,9 +201,3 @@ def pdf_to_base64(file_path):
 if __name__ == '__main__':
     app.run(port=5000)
 
-
-# @app.route('/add', methods=['POST'])
-# def add_data():
-#     data = {"id":"123dads","name": "Alice", "age": 35}
-#     mongo.db.summary.insert_one(data)
-#     return "Data added!"
